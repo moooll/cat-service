@@ -1,31 +1,29 @@
 package main
 
 import (
-	"cat-crud/models"
-	"cat-crud/storage"
+	"cat-service/db/psql"
+	"cat-service/db/psql/models"
+	"context"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
 type Service struct {
-	Catalog storage.Catalog
+	catalog *psql.Catalog
 }
 
 func (s *Service) addCat(c echo.Context) error {
-	type Cat struct {
-		Name  string  `json:"name"`
-		Breed string  `json:"breed"`
-		Color string  `json:"color"`
-		Age   float32 `json:"age"`
-		Price float32 `json:"price"`
-	}
 	cat := &models.Cat{}
 	if err := (&echo.DefaultBinder{}).BindBody(c, &cat); err != nil {
 		return err
 	}
 
-	s.Catalog.Save(*cat)
+	err := s.catalog.Save(context.Background(), *cat)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -35,42 +33,64 @@ func (s *Service) deleteCat(c echo.Context) error {
 		return err
 	}
 
-	s.Catalog.Delete(id)
+	s.catalog.Delete(id)
 	return nil
 }
 
 // updateCat receives requests' bodies following the pattern:
 // {id:id, []fields{field_name:new_value}}
-func (s *Service) updateCat(c echo.Context) error {
-	type field struct {
-		name string
-		value string
-	}
-	type request struct {
-		id uuid.UUID
-		fields []field 
-	}
-	req := &request{}
-	if err := (&echo.DefaultBinder{}).BindBody(c, req); err != nil {
+// func (s *Service) updateCat(c echo.Context) error {
+// 	// type field struct {
+// 	// 	name  string
+// 	// 	value string
+// 	// }
+// 	// type request struct {
+// 	// 	id     uuid.UUID
+// 	// 	fields []field
+// 	// }
+// 	// req := &request{}
+// 	// if err := (&echo.DefaultBinder{}).BindBody(c, req); err != nil {
+// 	// 	return err
+// 	// }
+
+// 	// psql.Update
+// 	// return nil
+// }
+
+func (s *Service) getCat(c echo.Context) error {
+	var id uuid.UUID
+	if err := (&echo.DefaultBinder{}).BindBody(c, &id); err != nil {
 		return err
 	}
 
-	
-	return nil
-}
+	cat, err := s.catalog.Get(id)
+	if err != nil {
+		return err
+	}
 
-func (s *Service) getCat(c echo.Context) error {
+	catB, err :=  ffjson.Marshal(cat) 
+	if err != nil {
+		return err
+	}
+
+	err = c.JSON(200, catB)
+	if err != nil {
+		return err
+	}	
 
 	return nil
 }
 func (s *Service) getAllCats(c echo.Context) error {
+	var cats []models.Cat
+	if err := (&echo.DefaultBinder{}).BindBody(c, &cats); err != nil {
+		return err
+	}
+
+	cats, err := s.catalog.GetAll()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *Service) getCatName(c echo.Context) error {
-	return nil
-}
-
-func (s *Service) updateCatName(c echo.Context) error {
-	return nil
-}
