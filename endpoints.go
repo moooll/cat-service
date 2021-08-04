@@ -3,7 +3,6 @@ package main
 import (
 	"cat-service/db/psql"
 	"cat-service/db/psql/models"
-	"context"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -20,7 +19,7 @@ func (s *Service) addCat(c echo.Context) error {
 		return err
 	}
 
-	err := s.catalog.Save(context.Background(), *cat)
+	_, err := s.catalog.Save(*cat)
 	if err != nil {
 		return err
 	}
@@ -68,7 +67,7 @@ func (s *Service) getCat(c echo.Context) error {
 		return err
 	}
 
-	catB, err :=  ffjson.Marshal(cat) 
+	catB, err := ffjson.Marshal(cat)
 	if err != nil {
 		return err
 	}
@@ -76,7 +75,7 @@ func (s *Service) getCat(c echo.Context) error {
 	err = c.JSON(200, catB)
 	if err != nil {
 		return err
-	}	
+	}
 
 	return nil
 }
@@ -93,4 +92,3 @@ func (s *Service) getAllCats(c echo.Context) error {
 
 	return nil
 }
-
