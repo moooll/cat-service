@@ -36,7 +36,7 @@ func main() {
 	e.POST("/cats/add", service.addCat)
 	e.GET("/cats", service.getAllCats)
 	e.GET("/cats/:id", service.getCat)
-	// e.PUT("/cats/:id", service.updateCat)
+	e.PUT("/cats/:id", service.updateCat)
 	e.DELETE("/cats/:id", service.deleteCat)
 
 	if err := e.Start(":8081"); err != nil {

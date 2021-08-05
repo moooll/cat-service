@@ -1,21 +1,21 @@
-package psql
+package main
 
 import (
+	"cat-service/db/psql"
 	"context"
 	"log"
 	"os"
 	"testing"
 
-	//"github.com/jackc/pgx"
-
 	"github.com/jackc/pgx/v4"
+	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest"
 	"go.uber.org/zap"
 )
 
-
-var db *TestConn
-var catalog *Catalog
+var e *echo.Echo
+var db *psql.TestConn
+var catalog *psql.Catalog
 
 func TestMain(m *testing.M) {
 	logger, err := zap.NewProduction()
@@ -62,6 +62,19 @@ func TestMain(m *testing.M) {
 		zap.L().Error("could not purge resource ", zap.Error(err))
 	}
 
-	db = NewTestConn(conn)
-	catalog = NewCatalog(conn)
+	db = psql.NewTestConn(conn)
+	catalog := psql.NewCatalog(conn)
+	service := &Service{
+		catalog,
+	}
+	e = echo.New()
+	e.POST("/cats/add", service.addCat)
+	e.GET("/cats", service.getAllCats)
+	e.GET("/cats/:id", service.getCat)
+	e.PUT("/cats/:id", service.updateCat)
+	e.DELETE("/cats/:id", service.deleteCat)
+
+	if err := e.Start(":8087"); err != nil {
+		zap.L().Error("could not start server", zap.Error(err))
+	}
 }

@@ -7,9 +7,6 @@ import (
 	"math/rand"
 	"testing"
 
-	//"github.com/ory/dockertest"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
 	"github.com/thanhpk/randstr"
 	"go.uber.org/zap"
 )
@@ -24,10 +21,9 @@ func TestGetAll(t *testing.T) {
 		zap.L().Error("cannot seed cats :/")
 	}
 
-	var gotCats []models.Cat
-	err = db.conn.QueryRow(context.Background(), "select * from cats").Scan(&gotCats)
+	gotCats, err := catalog.GetAll()
 	if err != nil {
-		zap.L().Error("cannot query the database: ", zap.Error(err))
+		zap.L().Error("error gettinf all cats ", zap.Error(err))
 	}
 
 	for i, v := range expectedCats {
@@ -41,7 +37,7 @@ func TestGetAll(t *testing.T) {
 // todo
 func TestGet(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats")
+		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
 	cats, err := SeedCats(db)
@@ -64,12 +60,12 @@ func TestGet(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats")
+		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
 	cats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/")
+		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
 	}
 
 	n := rand.Intn(6)
@@ -93,12 +89,12 @@ func TestDelete(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats")
+		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
 	cats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/")
+		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
 	}
 
 	name := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -115,9 +111,6 @@ func TestUpdate(t *testing.T) {
 		Age:   age,
 		Price: price,
 	}
-	// err = db.conn.QueryRow(context.Background(), "update cats set name=$2, breed=$3, color=$4, age=$5, price=$6 where id $1",
-	// 	cats[n][0].(models.Cat).ID, name, breed, color, age, price).Scan(&gotCats)
-
 	gotCat, err := catalog.Update(cats[n][0].(models.Cat).ID, expectedCat)
 	if err != nil {
 		zap.L().Error("expected cats: " + fmt.Sprint(expectedCat) + " got cats: " + fmt.Sprint(gotCat))
@@ -131,71 +124,14 @@ func TestUpdate(t *testing.T) {
 
 func TestSave(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats")
+		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
-	expectedCat := randCat()
+	expectedCat := RandCat()
 	gotCat := models.Cat{}
-	// err := db.conn.QueryRow(context.Background(), "insert into cats(id, name, breed, color, age, price) values ($1, $2, $3, $4, $5, $6)",
-		// expectedCat.ID, expectedCat.Name, expectedCat.Breed, expectedCat.Color, expectedCat.Age, expectedCat.Price).Scan(&gotCat)
 	gotCat, err := catalog.Save(expectedCat)
 	if err != nil {
 		zap.L().Error("expected cat: " + fmt.Sprint(expectedCat) + "got cat: " + fmt.Sprint(gotCat))
 		t.Fail()
-	}
-}
-
-func Truncate(db *TestConn) error {
-	_, err := db.conn.Query(context.Background(), "truncate table cats")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SeedCats(db *TestConn) (rows [][]interface{}, err error) {
-	rows = [][]interface{}{}
-	for i := 0; i < 7; i++ {
-		id := uuid.New()
-		name := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-		breed := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-		color := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-		age := rand.Float32() * 15
-		price := rand.Float32() * 15
-		rows[i] = append(rows[i], models.Cat{
-			ID:    id,
-			Name:  name,
-			Breed: breed,
-			Color: color,
-			Age:   age,
-			Price: price,
-		})
-	}
-	_, err = db.conn.CopyFrom(context.Background(),
-		pgx.Identifier{"cats"},
-		[]string{"id", "name", "breed", "color", "age", "price"},
-		pgx.CopyFromRows(rows))
-	if err != nil {
-		return rows, err
-	}
-
-	return rows, nil
-}
-
-func randCat() models.Cat {
-	id := uuid.New()
-	name := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	breed := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	color := randstr.String(8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	age := rand.Float32() * 15
-	price := rand.Float32() * 15
-	return models.Cat{
-		ID:    id,
-		Name:  name,
-		Breed: breed,
-		Color: color,
-		Age:   age,
-		Price: price,
 	}
 }
