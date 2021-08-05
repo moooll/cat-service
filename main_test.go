@@ -47,34 +47,10 @@ func TestMain(m *testing.M) {
 		zap.L().Error("error on retry ", zap.Error(err))
 	}
 
-	// todo: change fields' types
-	// 	_, err = conn.Query(context.Background(), `create table if not exists cats
-	// (
-	// 	id    string
-	// 	name  string
-	// 	breed string
-	// 	color string
-	// 	age   string
-	// 	price string
-	// )`, )
-
 	if err = pool.Purge(resource); err != nil {
 		zap.L().Error("could not purge resource ", zap.Error(err))
 	}
 
 	db = psql.NewTestConn(conn)
-	catalog := psql.NewCatalog(conn)
-	service := &Service{
-		catalog,
-	}
-	e = echo.New()
-	e.POST("/cats/add", service.addCat)
-	e.GET("/cats", service.getAllCats)
-	e.GET("/cats/:id", service.getCat)
-	e.PUT("/cats/:id", service.updateCat)
-	e.DELETE("/cats/:id", service.deleteCat)
-
-	if err := e.Start(":8087"); err != nil {
-		zap.L().Error("could not start server", zap.Error(err))
-	}
+	// catalog := psql.NewCatalog(conn)
 }
