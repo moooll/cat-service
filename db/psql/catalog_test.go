@@ -4,6 +4,7 @@ import (
 	"cat-service/db/psql/models"
 	"context"
 	"fmt"
+	"log"
 	"math/rand"
 	"testing"
 
@@ -13,12 +14,12 @@ import (
 
 func TestGetAll(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats")
+		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
 	expectedCats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/")
+		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
 	}
 
 	gotCats, err := catalog.GetAll()
@@ -42,7 +43,7 @@ func TestGet(t *testing.T) {
 
 	cats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/")
+		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
 	}
 
 	n := rand.Intn(6)
@@ -111,27 +112,22 @@ func TestUpdate(t *testing.T) {
 		Age:   age,
 		Price: price,
 	}
-	gotCat, err := catalog.Update(cats[n][0].(models.Cat).ID, expectedCat)
+	err = catalog.Update(cats[n][0].(models.Cat).ID, expectedCat)
 	if err != nil {
-		zap.L().Error("expected cats: " + fmt.Sprint(expectedCat) + " got cats: " + fmt.Sprint(gotCat))
-	}
-
-	if expectedCat != gotCat {
-		zap.L().Error("expected cat: " + fmt.Sprint(expectedCat) + "got cat: " + fmt.Sprint(gotCat))
-		t.Fail()
+		log.Print("error: ", err.Error())
 	}
 }
 
+// doubt if the test gonna pass
 func TestSave(t *testing.T) {
 	if err := Truncate(db); err != nil {
 		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
 
 	expectedCat := RandCat()
-	gotCat := models.Cat{}
-	gotCat, err := catalog.Save(expectedCat)
+	err := catalog.Save(expectedCat)
 	if err != nil {
-		zap.L().Error("expected cat: " + fmt.Sprint(expectedCat) + "got cat: " + fmt.Sprint(gotCat))
+		log.Print("err ", err)
 		t.Fail()
 	}
 }

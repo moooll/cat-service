@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 
 	"cat-service/db/psql"
 	"cat-service/db/psql/models"
@@ -16,26 +18,31 @@ type Service struct {
 
 func (s *Service) addCat(c echo.Context) error {
 	cat := &models.Cat{}
+
 	if err := (&echo.DefaultBinder{}).BindBody(c, &cat); err != nil {
+		log.Print("bind body ", err)
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	created, err := s.catalog.Save(*cat)
+	err := s.catalog.Save(*cat)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		log.Print("save ", err)
+		return c.JSON(http.StatusInternalServerError, "error saving cat(")
 	}
 
-	return c.JSON(http.StatusCreated, created)
+	return c.JSON(http.StatusCreated, nil)
 }
 
 func (s *Service) deleteCat(c echo.Context) error {
 	var id uuid.UUID
-	if err := (&echo.DefaultBinder{}).BindBody(c, &id); err != nil {
+	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &id); err != nil {
+		zap.L().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	err := s.catalog.Delete(id)
 	if err != nil {
+		zap.L().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
@@ -46,25 +53,34 @@ func (s *Service) deleteCat(c echo.Context) error {
 func (s *Service) updateCat(c echo.Context) error {
 	req := &models.Cat{}
 	if err := (&echo.DefaultBinder{}).BindBody(c, req); err != nil {
+		log.Print("bind body: ", err)		
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	newCat, err := s.catalog.Update(req.ID, *req)
+	err := s.catalog.Update(req.ID, *req)
 	if err != nil {
+		log.Print("update: ", err)		
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, newCat)
+	return c.JSON(http.StatusOK, nil)
 }
 
 func (s *Service) getCat(c echo.Context) error {
 	var id uuid.UUID
-	if err := (&echo.DefaultBinder{}).BindBody(c, &id); err != nil {
+	q := c.Param("id")
+	id, err := uuid.Parse(q)
+	log.Print(id)
+	if err != nil {
+		log.Print("uuid parse ", err)
+		zap.L().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	cat, err := s.catalog.Get(id)
 	if err != nil {
+		log.Print("get catalog", err)
+		zap.L().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
@@ -72,14 +88,17 @@ func (s *Service) getCat(c echo.Context) error {
 }
 func (s *Service) getAllCats(c echo.Context) error {
 	var cats []models.Cat
-	if err := (&echo.DefaultBinder{}).BindBody(c, &cats); err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
-	}
-
 	cats, err := s.catalog.GetAll()
 	if err != nil {
+		log.Print(err)
+		zap.L().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, cats)
+}
+
+func getRandCat(c echo.Context) error {
+	cat := psql.RandCat()
+	return c.JSON(200, cat)
 }

@@ -1,2 +1,7 @@
-/bin
+/bin -r
 .env
+/air
+/rmp
+/cat-service
+docker-compose.yaml
+.gitignore
