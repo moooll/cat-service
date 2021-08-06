@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,6 @@ import (
 	"cat-service/db/psql/models"
 
 	"github.com/pquerna/ffjson/ffjson"
-	"go.uber.org/zap"
 )
 
 func TestAddCat(t *testing.T) {
@@ -23,15 +23,15 @@ func TestAddCat(t *testing.T) {
 	var b *bytes.Buffer
 	err := json.NewEncoder(b).Encode(cat)
 	if err != nil {
-		zap.L().Error("cannot encode cat :/")
+		log.Print("cannot encode cat :/ ", err.Error())
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/cats/add", b)
+	req := httptest.NewRequest(http.MethodPost, "/cats", b)
 	resp := req.Response
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		zap.L().Error("expected status: " +
+		log.Print("expected status: " +
 			strconv.Itoa(http.StatusCreated) + " got status: " + strconv.Itoa(resp.StatusCode))
 		t.Fail()
 	}
@@ -40,18 +40,18 @@ func TestAddCat(t *testing.T) {
 func TestDeleteCat(t *testing.T) {
 	err := psql.Truncate(db)
 	if err != nil {
-		zap.L().Error("error truncating table cats")
+		log.Print("error truncating table cats ", err.Error())
 	}
 
 	cats, err := psql.SeedCats(db)
 	if err != nil {
-		zap.L().Error("error seeding cats")
+		log.Print("error seeding cats ", err.Error())
 	}
 
 	id := cats[rand.Intn(6)][0].(models.Cat).ID
 	req := httptest.NewRequest(http.MethodDelete, "/cats/"+id.String(), nil)
 	if req.Response.StatusCode != http.StatusOK {
-		zap.L().Error("testing delete handler failed :(")
+		log.Print("testing delete handler failed :( ", err.Error())
 		t.Fail()
 	}
 }
@@ -61,12 +61,12 @@ func TestUpdateCat(t *testing.T) {
 	var b *bytes.Buffer
 	err := json.NewEncoder(b).Encode(cat)
 	if err != nil {
-		zap.L().Error("cannot encode cat :/")
+		log.Print("cannot encode cat :/ ", err.Error())
 	}
 
 	req, _ := PrepareDBAndRequest(http.MethodPut, b)
 	if req.Response.StatusCode != http.StatusOK {
-		zap.L().Error("testing delete handler failed :(")
+		log.Print("testing delete handler failed :( ", err.Error())
 		t.Fail()
 	}
 
@@ -77,17 +77,17 @@ func TestGetCat(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(req.Response.Body)
 	if err != nil {
-		zap.L().Error("error reading from buffer")
+		log.Print("error reading from buffer ", err.Error())
 	}
 
 	var gotCat models.Cat
 	err = ffjson.Unmarshal(buf.Bytes(), &gotCat)
 	if err != nil {
-		zap.L().Error("error unmarshalling cat")
+		log.Print("error unmarshalling cat ", err.Error())
 	}
 
 	if req.Response.StatusCode != http.StatusOK || expectedCat != gotCat {
-		zap.L().Error("testing get handler failed :(")
+		log.Print("testing get handler failed :( ", err.Error())
 		t.Fail()
 	}
 }
@@ -95,30 +95,30 @@ func TestGetCat(t *testing.T) {
 func TestGetAllCats(t *testing.T) {
 	err := psql.Truncate(db)
 	if err != nil {
-		zap.L().Error("error truncating table cats")
+		log.Print("error truncating table cats ", err.Error())
 	}
 
 	expectedCats, err := psql.SeedCats(db)
 	if err != nil {
-		zap.L().Error("error seeding cats")
+		log.Print("error seeding cats ", err.Error())
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/cats", nil)
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(req.Response.Body)
 	if err != nil {
-		zap.L().Error("error reading from buffer")
+		log.Print("error reading from buffer ", err.Error())
 	}
 
 	var gotCats []models.Cat
 	err = ffjson.Unmarshal(buf.Bytes(), &gotCats)
 	if err != nil {
-		zap.L().Error("error unmarshalling cats")
+		log.Print("error unmarshalling cats ", err.Error())
 	}
 
 	for i, v := range expectedCats {
 		if v[0].(models.Cat) != gotCats[i] {
-			zap.L().Error("expected cat: " + fmt.Sprint(v[0].(models.Cat)) + " got cat: " + fmt.Sprint(gotCats[i]))
+			log.Print("expected cat: " + fmt.Sprint(v[0].(models.Cat)) + " got cat: " + fmt.Sprint(gotCats[i]))
 		}
 	}
 
@@ -127,12 +127,12 @@ func TestGetAllCats(t *testing.T) {
 func PrepareDBAndRequest(meth string, body io.Reader) (*http.Request, models.Cat) {
 	err := psql.Truncate(db)
 	if err != nil {
-		zap.L().Error("error truncating table cats")
+		log.Print("error truncating table cats ", err.Error())
 	}
 
 	cats, err := psql.SeedCats(db)
 	if err != nil {
-		zap.L().Error("error seeding cats")
+		log.Print("error seeding cats ", err.Error())
 	}
 
 	cat := cats[rand.Intn(6)][0].(models.Cat)

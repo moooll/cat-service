@@ -14,22 +14,22 @@ import (
 
 func TestGetAll(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats ", zap.Error(err))
+		log.Print("cannot truncate table cats ", err.Error())
 	}
 
 	expectedCats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
+		log.Print("cannot seed cats :/ ", err.Error())
 	}
 
 	gotCats, err := catalog.GetAll()
 	if err != nil {
-		zap.L().Error("error gettinf all cats ", zap.Error(err))
+		log.Print("error gettinf all cats ", err.Error())
 	}
 
 	for i, v := range expectedCats {
 		if gotCats[i] != v[0].(models.Cat) {
-			zap.L().Error("expected cat: " + v[0].(string) + "got cat: " + fmt.Sprint(gotCats[i]))
+			log.Print("expected cat: " + v[0].(string) + "got cat: " + fmt.Sprint(gotCats[i]))
 			t.Fail()
 		}
 	}
@@ -38,23 +38,23 @@ func TestGetAll(t *testing.T) {
 // todo
 func TestGet(t *testing.T) {
 	if err := Truncate(db); err != nil {
-		zap.L().Error("cannot truncate table cats ", zap.Error(err))
+		log.Print("cannot truncate table cats ", err.Error())
 	}
 
 	cats, err := SeedCats(db)
 	if err != nil {
-		zap.L().Error("cannot seed cats :/ ", zap.Error(err))
+		log.Print("cannot seed cats :/ ", err.Error())
 	}
 
 	n := rand.Intn(6)
 	gotCat, err := catalog.Get(cats[n][0].(models.Cat).ID)
 	if err != nil {
-		zap.L().Error("error getting items from db: ", zap.Error(err))
+		log.Print("error getting items from db: ", err.Error())
 	}
 
 	expectedCat := cats[n][0].(models.Cat)
 	if gotCat != expectedCat {
-		zap.L().Error("expected cat: " + fmt.Sprint(expectedCat) + "got cat: " + fmt.Sprint(gotCat))
+		log.Print("expected cat: " + fmt.Sprint(expectedCat) + "got cat: " + fmt.Sprint(gotCat))
 		t.Fail()
 	}
 }
@@ -92,7 +92,7 @@ func TestUpdate(t *testing.T) {
 	if err := Truncate(db); err != nil {
 		zap.L().Error("cannot truncate table cats ", zap.Error(err))
 	}
-
+	
 	cats, err := SeedCats(db)
 	if err != nil {
 		zap.L().Error("cannot seed cats :/ ", zap.Error(err))

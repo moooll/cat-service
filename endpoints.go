@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 
 	"cat-service/db/psql"
 	"cat-service/db/psql/models"
@@ -36,13 +35,13 @@ func (s *Service) addCat(c echo.Context) error {
 func (s *Service) deleteCat(c echo.Context) error {
 	var id uuid.UUID
 	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &id); err != nil {
-		zap.L().Error(err.Error())
+		log.Print(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	err := s.catalog.Delete(id)
 	if err != nil {
-		zap.L().Error(err.Error())
+		log.Print(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
@@ -53,13 +52,13 @@ func (s *Service) deleteCat(c echo.Context) error {
 func (s *Service) updateCat(c echo.Context) error {
 	req := &models.Cat{}
 	if err := (&echo.DefaultBinder{}).BindBody(c, req); err != nil {
-		log.Print("bind body: ", err)		
+		log.Print("bind body: ", err)
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	err := s.catalog.Update(req.ID, *req)
 	if err != nil {
-		log.Print("update: ", err)		
+		log.Print("update: ", err)
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
@@ -72,15 +71,14 @@ func (s *Service) getCat(c echo.Context) error {
 	id, err := uuid.Parse(q)
 	log.Print(id)
 	if err != nil {
-		log.Print("uuid parse ", err)
-		zap.L().Error(err.Error())
+		log.Print(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
 	cat, err := s.catalog.Get(id)
 	if err != nil {
 		log.Print("get catalog", err)
-		zap.L().Error(err.Error())
+		log.Print(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
@@ -90,8 +88,7 @@ func (s *Service) getAllCats(c echo.Context) error {
 	var cats []models.Cat
 	cats, err := s.catalog.GetAll()
 	if err != nil {
-		log.Print(err)
-		zap.L().Error(err.Error())
+		log.Print(err.Error())
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 

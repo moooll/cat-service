@@ -1,7 +1,8 @@
-/bin -r
+/bin/tmp/build-errors.log
 .env
 /air
 /rmp
 /cat-service
 docker-compose.yaml
 .gitignore
+/db/psql/const.go
